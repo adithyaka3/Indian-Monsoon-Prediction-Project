@@ -1,0 +1,7 @@
+1. in the implementation of autoencoder, activation function in the last layer -> REMOVE and check accuracy
+
+
+Things to be done:
+1. Table
+2. Data cleanup
+3. Train/ Testing data split

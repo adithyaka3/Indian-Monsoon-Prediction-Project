@@ -1,0 +1,11 @@
+.vscode/
+.ipynb_checkpoints/
+rain_data/
+raw_data/
+torch_objects/
+notebooks/
+homogenous_rain_data/
+gridded_data/
+all_india_rainfall/
+__pycache__/
+
