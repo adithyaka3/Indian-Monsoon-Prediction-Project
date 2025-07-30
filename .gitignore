@@ -8,4 +8,6 @@ homogenous_rain_data/
 gridded_data/
 all_india_rainfall/
 __pycache__/
+node_modules/
+test.ipynb
 

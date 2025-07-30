@@ -1,0 +1,24 @@
+{
+  "name": "my-implementation",
+  "version": "1.0.0",
+  "description": "1. Ensure rain_data folder has the data. This data is not available in the repo due to size restrictions.",
+  "main": "getrain.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adithyaka3/Indian-Monsoon-Prediction-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/adithyaka3/Indian-Monsoon-Prediction-Project/issues"
+  },
+  "homepage": "https://github.com/adithyaka3/Indian-Monsoon-Prediction-Project#readme",
+  "dependencies": {
+    "playwright": "^1.54.1"
+  }
+}

@@ -5,3 +5,4 @@ Things to be done:
 1. Table
 2. Data cleanup
 3. Train/ Testing data split
+4. Express rainfall as a percentage of LPA

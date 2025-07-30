@@ -45,34 +45,39 @@ def preprocess_rainfall_data(year, type):
     return jjas
 
 
-def get_jjas_rainfall(start_year, end_year):
+def get_jjas_rainfall(start_year, end_year, test):
+
+    # Get JJAS rainfall for all years from start_year to end_year
+    data = torch.load("torch_objects/jjas_percentage_deviation_south_peninsular.pt")
+    start = start_year - 1901
+    end = end_year - 1901
+    filtered_data = data[start:end+1]
+    filename = ""
+    if test:
+        filename = "torch_objects/test_annual_jjas_rainfall_data_south_peninsular.pt"
+    else:
+        filename = "torch_objects/train_annual_jjas_rainfall_data_south_peninsular.pt"
+    
+    torch.save(filtered_data, filename)
+    print(f"JJAS rainfall data saved to {filename}")
+    return filename
 
     all_years_rainfall = []
     for year in range(start_year, end_year + 1):
         all_years_rainfall.append(preprocess_rainfall_data(str(year), year != 2024))
 
-    years = np.arange(start_year, end_year +1)
-    # Create xarray DataArray
-    rainfall_da = xr.DataArray(
-        data=all_years_rainfall,
-        coords={"year": years},
-        dims=["year"],
-        name="rainfall",  # Name of the variable
-        attrs={"units": "mm", "description": "Annual Rainfall over India"}
-    )
+    filename = ""
+    if test:
+        filename = "test_annual_jjas_rainfall_data.nc"
+    else:
+        filename = "train_annual_jjas_rainfall_data.nc"
 
-    # Create Dataset
-    ds = xr.Dataset({"rainfall": rainfall_da})
-
-    # Save to NetCDF
-    filename = "all_india_rainfall/annual_jjas_rainfall_data.nc"
-    if os.path.exists(filename):
-        os.remove(filename)
-    ds.to_netcdf(filename)
-
-    filetensor = "torch_objects/annual_jjas_rainfall_data.pt"
+    filetensor = f"torch_objects/{filename}.pt"
+    min = np.min(all_years_rainfall)
+    max = np.max(all_years_rainfall)
+    print(f"JJAS rainfall data for {start_year}-{end_year} processed. Min: {min}, Max: {max}")
     rainfall_tensor = torch.tensor(all_years_rainfall, dtype=torch.float32)
-    torch.save(rainfall_tensor, "torch_objects/annual_jjas_rainfall_data.pt")
+    torch.save(rainfall_tensor, filetensor)
 
     return filetensor
 

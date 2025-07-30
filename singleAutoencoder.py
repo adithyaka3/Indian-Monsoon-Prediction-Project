@@ -48,7 +48,6 @@ class LinearAutoencoder(nn.Module):
             nn.Linear(29, 97),
             nn.Tanh(),
             nn.Linear(97, 324),  # Output layer
-            nn.Sigmoid(),
         )
 
     def forward(self, x):
@@ -115,9 +114,11 @@ def thresholding(model, dataloader, variable_name):
     encoded_dataset_h3 = torch.cat(all_h3, dim=0)
 
     # Save the encoded datasets
-    torch.save(encoded_dataset_h1, f"torch_objects/encoded_h1_{variable_name}.pt")
-    torch.save(encoded_dataset_h2, f"torch_objects/encoded_h2_{variable_name}.pt")
-    torch.save(encoded_dataset_h3, f"torch_objects/encoded_h3_{variable_name}.pt")
+    torch.save(encoded_dataset_h1, f"torch_objects/train_encoded_h1_{variable_name}.pt")
+    torch.save(encoded_dataset_h2, f"torch_objects/train_encoded_h2_{variable_name}.pt")
+    torch.save(encoded_dataset_h3, f"torch_objects/train_encoded_h3_{variable_name}.pt")
+
+    return W1, b1, W2, b2, W3, b3
 
 def getEncodeddata(variable_name, epochs):
     """This function loads the gridded data and then uses an autoencoder to encode the data into a lower dimension."""
@@ -141,6 +142,46 @@ def getEncodeddata(variable_name, epochs):
                 total_loss += loss.item() * inputs.size(0)
         print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/ len(dataset):.4f}")
     
-    thresholding(model, dataloader, variable_name)
+    return thresholding(model, dataloader, variable_name)
 
+def testGetEncodeddata(W1, b1, W2, b2, W3, b3, variable_name):
+    dataloader = dataloading(variable_name)
+    def thresholded_forward(x, W1, b1, W2, b2, W3, b3):
+            # Layer 1
+            h1 = torch.matmul(x, W1.T) + b1
+            h1 = torch.tanh(h1)
 
+            # Layer 2
+            h2 = torch.matmul(h1, W2.T) + b2
+            h2 = torch.tanh(h2)
+
+            # Layer 3
+            h3 = torch.matmul(h2, W3.T) + b3
+            h3 = torch.tanh(h3)
+
+            return h1, h2, h3
+
+    all_h1 = []
+    all_h2 = []
+    all_h3 = []
+    with torch.no_grad():
+        for batch in dataloader:
+            inputs = batch[0].to(device)
+            h1, h2, h3 = thresholded_forward(
+                inputs,
+                W1.to(device), b1.to(device), 
+                W2.to(device), b2.to(device), 
+                W3.to(device), b3.to(device),
+            )
+            all_h1.append(h1.cpu())
+            all_h2.append(h2.cpu())
+            all_h3.append(h3.cpu())
+
+    encoded_dataset_h1 = torch.cat(all_h1, dim=0)
+    encoded_dataset_h2 = torch.cat(all_h2, dim=0)
+    encoded_dataset_h3 = torch.cat(all_h3, dim=0)
+
+    # Save the encoded datasets
+    torch.save(encoded_dataset_h1, f"torch_objects/test_encoded_h1_{variable_name}.pt")
+    torch.save(encoded_dataset_h2, f"torch_objects/test_encoded_h2_{variable_name}.pt")
+    torch.save(encoded_dataset_h3, f"torch_objects/test_encoded_h3_{variable_name}.pt")

@@ -23,11 +23,11 @@ def getRankedPredictors(filetensor, variables):
 
     rain_data = torch.load(filetensor)  # Load the rainfall data tensor
 
-
+    ret_corr = []
     for var in variables:
         print(f"--- Processing variable: {var} ---")
         for layer in range(1, 4):
-            layer_features = torch.load(f"torch_objects/encoded_h{layer}_{var}.pt")
+            layer_features = torch.load(f"torch_objects/train_encoded_h{layer}_{var}.pt")
             layer_features = layer_features.T
 
 
@@ -51,28 +51,74 @@ def getRankedPredictors(filetensor, variables):
 
                 #sort in descending order of correlation ie the 4th element of all_correlations
             all_correlations.sort(key=lambda x: abs(x[2]), reverse=True)
+            ret_corr.append(all_correlations)
 
             #need to create 5 prediction sets by choosing top 4 5 6 8 10
             prediction_sets_sizes = [4, 5, 6, 8, 10]
-            prediction_set = []
             for k in prediction_sets_sizes:
                 print(f"--- Top {k} predictors for variable {var} and file encoded_h{layer}_{var}.pt---")
                 predictors = [all_correlations[i][0] for i in range(k)]
                 leads = [all_correlations[i][1] for i in range(k)]
                 leads = [5 - lead for lead in leads]
-                leads = [(lead + 12) % 12 for lead in leads]
+                # leads = [(lead + 12) % 12 for lead in leads]
                 top_correlations = [all_correlations[i][2] for i in range(k)]
+
                 
-                features = [layer_features[predictors[i]][torch.arange(leads[i], layer_features.shape[1], step= 12, dtype = torch.long)] for i in range(k)]
+                # features = [layer_features[predictors[i]][torch.arange(leads[i], layer_features.shape[1], step= 12, dtype = torch.long)] for i in range(k)]
+                features = []
+                for i in range(k):
+                    temp_features = []
+                    for j in range(leads[i], layer_features.shape[1], 12):
+                        if(j < 0):
+                            temp_features.append(float('nan'))
+                        else:
+                            temp_features.append(layer_features[predictors[i]][j])
+                    if leads[i] < 0:
+                        temp_features.pop()
+                    features.append(torch.tensor(temp_features, dtype=torch.float32))
+
                 features_torch = torch.stack(features)
                 features_torch = features_torch.T
                 print("Top Correlations:", top_correlations) 
                 #save the features tensor
-                torch.save(features_torch, f"torch_objects/features_h{layer}_{var}_top_{k}_predictors.pt")
+                torch.save(features_torch, f"torch_objects/train_features_h{layer}_{var}_top_{k}_predictors.pt")
                 print()
+    
+    return ret_corr
+
+def testGetRankedPredictors(correlations, variables):
+
+        for var in variables:
+            print(f"--- Processing variable: {var} ---")
+            for layer in range(1, 4):
+                layer_features = torch.load(f"torch_objects/test_encoded_h{layer}_{var}.pt")
+                layer_features = layer_features.T
 
 
+                #need to create 5 prediction sets by choosing top 4 5 6 8 10
+                prediction_sets_sizes = [4, 5, 6, 8, 10]
+                for k in prediction_sets_sizes:
+                    all_correlations = correlations[layer-1]
+                    predictors = [all_correlations[i][0] for i in range(k)]
+                    leads = [all_correlations[i][1] for i in range(k)]
+                    leads = [5 - lead for lead in leads]
 
+                    features = []
+                    for i in range(k):
+                        temp_features = []
+                        for j in range(leads[i], layer_features.shape[1], 12):
+                            if(j < 0):
+                                temp_features.append(float('nan'))
+                            else:
+                                temp_features.append(layer_features[predictors[i]][j])
+                        if leads[i] < 0:
+                            temp_features.pop()
+                        features.append(torch.tensor(temp_features, dtype=torch.float32))
 
+                    features_torch = torch.stack(features)
+                    features_torch = features_torch.T
+                    #save the features tensor
+                    torch.save(features_torch, f"torch_objects/test_features_h{layer}_{var}_top_{k}_predictors.pt")
+        
 
 
