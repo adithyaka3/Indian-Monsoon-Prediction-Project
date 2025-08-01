@@ -48,6 +48,7 @@ class LinearAutoencoder(nn.Module):
             nn.Linear(29, 97),
             nn.Tanh(),
             nn.Linear(97, 324),  # Output layer
+            nn.Sigmoid(),  # Use Sigmoid to match the input range
         )
 
     def forward(self, x):
