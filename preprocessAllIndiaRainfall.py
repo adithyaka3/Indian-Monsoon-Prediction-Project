@@ -51,7 +51,9 @@ def get_jjas_rainfall(start_year, end_year, test):
     data = torch.load("torch_objects/jjas_percentage_deviation_south_peninsular.pt")
     start = start_year - 1901
     end = end_year - 1901
+
     filtered_data = data[start:end+1]
+
     filename = ""
     if test:
         filename = "torch_objects/test_annual_jjas_rainfall_data_south_peninsular.pt"

@@ -5,15 +5,15 @@ from preprocessAllIndiaRainfall import get_jjas_rainfall
 from rankedPredictors import getRankedPredictors, testGetRankedPredictors
 from predict import prediction
 
-param = "mslp"  # Example parameter, can be changed as needed
+param = "hgt"  # Example parameter, can be changed as needed
 #First step is to grid the data into bins
-train_start = 1980
+train_start = 1950
 train_end = 2010
-test_start = 1980
-test_end = 2010
+test_start = 2011
+test_end = 2015
 
 print("Gridding the data...")
-griddata(param = param, level = 200, gridsize= 10, starttime = f"{train_start}-01-01", endtime = f"{train_end}-12-31")
+griddata(param=param, level=200, gridsize=10, starttime=f"{train_start}-01-01", endtime=f"{train_end}-12-31")
 print("Gridding completed.")
 
 #second step if to process the rainfall data. 
@@ -24,7 +24,7 @@ print("Rainfall data processed.")
 
 #Next step is to encode the data using the autoencoder
 print("Encoding the data using single autoencoder...")
-W1, b1, W2, b2, W3, b3 = getEncodeddata(variable_name=param, epochs=200)
+W1, b1, W2, b2, W3, b3, min_val, max_val = getEncodeddata(variable_name=param, epochs=200)
 print("Encoding completed using single autoencoder.")
 
 #Next step is to get the ranked predictors
@@ -33,18 +33,17 @@ all_correlations = getRankedPredictors(rain_file_tensor, variables=[param])
 print("Ranked predictors obtained.")
 
 
-
 #TESTING:
 print("Test gridding the data...")
-griddata(param = param, level = 200, gridsize= 10, starttime = f"{test_start}-01-01", endtime = f"{test_end}-12-31")
+griddata(param=param, level=200, gridsize=10, starttime=f"{test_start}-01-01", endtime=f"{test_end}-12-31")
 print("Test gridding completed.")
 
 print("Test rainfall data processing...")
-test_rain_file_tensor = get_jjas_rainfall(start_year=test_start, end_year=test_end, test = True) # Inclusive of the end year, i.e 31-12
+test_rain_file_tensor = get_jjas_rainfall(start_year=test_start, end_year=test_end, test=True)  # Inclusive of the end year, i.e 31-12
 print("Test rainfall data processed.")
 
 print("Test encoding the data using single autoencoder...")
-testGetEncodeddata(W1, b1, W2, b2, W3, b3, variable_name=param)
+testGetEncodeddata(W1, b1, W2, b2, W3, b3, variable_name=param, min_val=min_val, max_val=max_val)
 print("Test encoding completed using single autoencoder.")
 
 print("Test ranked predictors...")
@@ -56,6 +55,10 @@ print("Test ranked predictors obtained.")
 print("Predicting rainfall using ranked predictors...")
 layer = 3
 top = 5
+mse = 1e10
+mape = 101
+pred = []
+act = []
 for layer in range(1, 4):
     for top in [4, 5, 6, 8, 10]:
         print(f"Predicting using layer {layer} and top {top} predictors...")
@@ -63,10 +66,18 @@ for layer in range(1, 4):
         train_feature_data_path = f"torch_objects/train_features_h{layer}_{param}_top_{top}_predictors.pt"
         test_feature_data_path = f"torch_objects/test_features_h{layer}_{param}_top_{top}_predictors.pt"
 
-        prediction(rain_file_tensor, test_rain_file_tensor, train_feature_data_path, test_feature_data_path)
-        print("------------------------------------------------")
+        test_mse, test_mape, y_pred, y_test = prediction(rain_file_tensor, test_rain_file_tensor, train_feature_data_path, test_feature_data_path, use_tuning=True)
+        if( test_mse < mse):
+            mse = test_mse
+            mape = test_mape
+            pred = y_pred
+            act = y_test
 
 print("Prediction completed.")
+print(f"Best MSE: {mse}, Best MAPE: {mape}")
+#dsplay in a good tabular format for both predicted and actual values
+for i in range(len(pred)):
+    print(f"Predicted: {pred[i]:.2f}, Actual: {act[i]:.2f}")
 
 
 

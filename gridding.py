@@ -27,7 +27,7 @@ def griddata(param, level, gridsize, starttime: str, endtime: str):
     for i,lon in enumerate(lon_intervals):
         for j,lat in enumerate(lat_intervals):
             data = None
-            if param == "mslp":
+            if param == "mslp" or param == "slp":
                 data = var_capped.sel(lon=slice(lon, lon + 2*gridsize), lat=slice( lat + gridsize, lat)) #use for mslp
             else:
                 data = var_capped.sel(level = level, lon=slice(lon, lon + 2*gridsize), lat=slice( lat + gridsize, lat)) #use for uwnd
@@ -57,5 +57,6 @@ def griddata(param, level, gridsize, starttime: str, endtime: str):
     if os.path.exists(f"gridded_data/{param}_grid.nc"):
         os.remove(f"gridded_data/{param}_grid.nc")
     mslp_grid.to_netcdf(f"gridded_data/{param}_grid.nc")
+
 
 

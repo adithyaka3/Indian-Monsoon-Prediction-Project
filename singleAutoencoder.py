@@ -7,7 +7,7 @@ import torch.optim as optim
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def dataloading(variable_name):
+def dataloading(variable_name, min_val=None, max_val=None):
     file_path = f"gridded_data/{variable_name}_grid.nc"
     # Load and normalize NetCDF variable
     ds = xr.open_dataset(file_path)
@@ -17,15 +17,16 @@ def dataloading(variable_name):
     data = torch.tensor(data, dtype=torch.float32)
 
     #normalizing
-    min_val = data.min()
-    max_val = data.max()
+    if min_val is None or max_val is None:
+        min_val = data.min()
+        max_val = data.max()
     data = (data - min_val) / (max_val - min_val + 1e-8)  # Avoid division by zero
 
     data = data.reshape(data.shape[0], -1)  # Flatten the 18x18 into a single dimension
     time = data.shape[0]
     dataset = TensorDataset(data)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-    return dataloader
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+    return dataloader, min_val, max_val
 
 class LinearAutoencoder(nn.Module):
     def __init__(self):
@@ -124,7 +125,7 @@ def thresholding(model, dataloader, variable_name):
 def getEncodeddata(variable_name, epochs):
     """This function loads the gridded data and then uses an autoencoder to encode the data into a lower dimension."""
     # Load the dataset and create a DataLoader
-    dataloader = dataloading(variable_name)
+    dataloader, min_val, max_val = dataloading(variable_name)
 
     model = LinearAutoencoder().to(device)
     criterion = nn.MSELoss()
@@ -141,12 +142,12 @@ def getEncodeddata(variable_name, epochs):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item() * inputs.size(0)
-        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/ len(dataset):.4f}")
-    
-    return thresholding(model, dataloader, variable_name)
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/ len(dataset):.4f}", end='\r')
+    W1, b1, W2, b2, W3, b3 = thresholding(model, dataloader, variable_name)
+    return W1, b1, W2, b2, W3, b3, min_val, max_val 
 
-def testGetEncodeddata(W1, b1, W2, b2, W3, b3, variable_name):
-    dataloader = dataloading(variable_name)
+def testGetEncodeddata(W1, b1, W2, b2, W3, b3, variable_name, min_val, max_val):
+    dataloader = dataloading(variable_name, min_val, max_val)[0]
     def thresholded_forward(x, W1, b1, W2, b2, W3, b3):
             # Layer 1
             h1 = torch.matmul(x, W1.T) + b1
